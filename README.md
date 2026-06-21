@@ -1,10 +1,12 @@
-# Beyond the Score — Zero-Shot VLM Judge for Video-Codec Quality
+# Reproducibility Artifact — Zero-Shot VLM Judge for Compressed-Video Quality
 
-Reproducibility artifact for the WebMedia 2026 submission *"Beyond the Score: A Zero-Shot
-Vision–Language Judge for Interpretable, Artifact-Aware Quality Assessment of Traditional and
-Neural Video Codecs."*
+Code and result files accompanying a double-blind conference submission on using off-the-shelf
+vision–language models, **zero-shot**, as interpretable full-reference perceptual judges of
+traditional and neural video-codec quality.
 
-> **Anonymized for double-blind review.** Author/institution information is intentionally omitted.
+> **Anonymized for double-blind review.** The paper title, authors, and institution are
+> intentionally omitted; this is the version intended to be served through an anonymization
+> proxy. The de-anonymized version (with title and authors) will be published on acceptance.
 
 ## What this is
 Three frontier commercial VLMs (Claude, GPT-5.5, Gemini) are used **zero-shot** as
