@@ -1,0 +1,10 @@
+anthropic>=0.111
+openai>=2.0
+pillow
+numpy
+pandas
+scipy
+scikit-image
+matplotlib
+torch
+lpips

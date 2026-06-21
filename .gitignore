@@ -1,0 +1,8 @@
+*.env
+!keys.env.example
+frames_*/
+*.mkv
+*.png
+AVT-VQDB-UHD-1-NVC/
+__pycache__/
+*.pyc

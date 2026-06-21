@@ -1,0 +1,4 @@
+judge_a,judge_b,n,spearman
+claude,gemini,216,0.8907176958058104
+claude,gpt,216,0.8818059352830833
+gemini,gpt,216,0.946288407677075
