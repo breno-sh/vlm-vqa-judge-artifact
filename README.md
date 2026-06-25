@@ -1,68 +1,196 @@
-# Reproducibility Artifact — Zero-Shot VLM Judge for Compressed-Video Quality
+# Zero-Shot VLM Judge for Compressed-Video Quality Assessment
 
-Code and result files accompanying a double-blind conference submission on using off-the-shelf
-vision–language models, **zero-shot**, as interpretable full-reference perceptual judges of
-traditional and neural video-codec quality.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Anonymous Submission](https://img.shields.io/badge/paper-double--blind%20review-orange.svg)]()
 
-> **Anonymized for double-blind review.** The paper title, authors, and institution are
-> intentionally omitted; this is the version intended to be served through an anonymization
-> proxy. The de-anonymized version (with title and authors) will be published on acceptance.
+> **Anonymous submission — double-blind review.**
+> Authors and institution are intentionally omitted. The de-anonymized version will be published on acceptance.
 
-## What this is
-Three frontier commercial VLMs (Claude, GPT-5.5, Gemini) are used **zero-shot** as
-full-reference perceptual judges of compressed video: given a reference and a reconstructed
-crop, each returns a quality score (anchored to the ITU-R BT.500 impairment scale), a
-dominant-artifact label, and a one-sentence justification. We validate against human MOS and
-compare with PSNR/SSIM/LPIPS (recomputed on the *same* crops) and full-video VMAF.
+---
+
+## What is this?
+
+Standard video-quality metrics (PSNR, SSIM, VMAF, LPIPS) tell you *how much* a compressed
+frame degrades — but not *why*. Blocking, texture blur, ringing: the artifact type changes
+the fix, yet every metric collapses these into a single number.
+
+This work asks: **can an off-the-shelf AI assistant, with zero video-quality training, look
+at a reference frame and its compressed version and act as a perceptual judge — rating quality
+*and* naming the artifact?**
+
+We tested three frontier vision-language models (**Claude Opus 4.8, GPT-5.5, Gemini 3.5 Flash**)
+zero-shot on 216 compressed video sequences covering both **traditional codecs** (AV1, VVC)
+and **neural codecs** (DCVC-FM, DCVC-RT), validating every output against human MOS.
+
+---
+
+## Key Results
+
+### Correlation with Human MOS (all 216 PVS, matched per-frame inputs)
+
+| Predictor | SROCC | 95% CI | PLCC | SROCC per-content |
+|-----------|------:|--------|-----:|------------------:|
+| **VMAF** *(full-video)* | **0.907** | [0.877, 0.952] | **0.911** | 0.940 |
+| — | — | — | — | — |
+| **Gemini 3.5 Flash** *(ours)* | **0.736** | [0.690, 0.830] | 0.732 | 0.793 |
+| **Claude Opus 4.8** *(ours)* | **0.723** | [0.641, 0.826] | 0.719 | 0.811 |
+| **GPT-5.5** *(ours)* | **0.705** | [0.643, 0.797] | 0.711 | 0.750 |
+| — | — | — | — | — |
+| PSNR *(frame-crop)* | 0.627 | [0.550, 0.738] | 0.618 | 0.734 |
+| LPIPS *(frame-crop)* | 0.623 | [0.530, 0.773] | 0.629 | 0.695 |
+| SSIM *(frame-crop)* | 0.585 | [0.461, 0.716] | 0.560 | 0.621 |
+
+> **The three zero-shot AI judges outperform every classical frame-level metric** (Williams's
+> test, p < 0.01), with no training on video quality data. They trail only full-video VMAF,
+> which integrates the entire sequence — an advantage the single-crop judge does not have.
+
+### Artifact Detection (something no scalar metric can do)
+
+| Codec family | blocking | texture-blur | color-shift |
+|---|---:|---:|---:|
+| Traditional (AV1, VVC) | **6 PVS** | 101 | 1 |
+| Neural (DCVC-FM, DCVC-RT) | **0 PVS** | 108 | 0 |
+
+Every single blocking call landed on a traditional codec. Not one was wrongly attributed
+to a neural codec. Three independent AI vendors agreed with inter-model Spearman **0.88–0.95**.
+
+### Cross-Vendor Agreement
+
+| Pair | Spearman |
+|------|----------:|
+| Claude × Gemini | 0.891 |
+| Claude × GPT-5.5 | 0.882 |
+| Gemini × GPT-5.5 | **0.946** |
+
+---
+
+## How It Works
+
+```
+PVS (video)
+    │
+    ▼
+aligned 512×512 crop pairs (reference + reconstruction)
+    │
+    ▼
+Zero-shot VLM judge  ──── score pass  (ITU-R BT.500 scale, 0–100)
+  Claude / GPT / Gemini ── artifact pass (blocking / texture-blur / color-shift / ringing)
+    │
+    ▼
+JSON  →  aggregate per-PVS  →  compare vs. human MOS + PSNR/SSIM/VMAF/LPIPS
+```
+
+Each model is queried in **two passes**:
+1. **Score pass** — integer 0–100 anchored to the ITU-R BT.500 five-level impairment scale
+2. **Artifact pass** — dominant artifact label from a fixed taxonomy + one-sentence justification
+
+---
 
 ## Dataset
-**AVT-VQDB-UHD-1-NVC** (public; 6 UHD contents × {AV1, VVC, DCVC-FM, DCVC-RT} × quality levels,
-216 PVS with per-PVS MOS). Obtain it from the dataset authors' public distribution. Place
-`subjective.csv`, `results.json`, `decoded/` and `original/` under `AVT-VQDB-UHD-1-NVC/`.
+
+**AVT-VQDB-UHD-1-NVC** (public):
+- 6 UHD source contents × {AV1, VVC, DCVC-FM, DCVC-RT} × quality levels = **216 PVS**
+- Per-PVS human MOS collected under ITU-R BT.500 / ITU-T P.910
+
+Obtain from the dataset authors. Place `subjective.csv`, `results.json`, `decoded/`, and
+`original/` under `AVT-VQDB-UHD-1-NVC/`.
+
+---
 
 ## Setup
+
 ```bash
 pip install -r requirements.txt
-cp keys.env.example keys.env   # then fill in your own API keys
+cp keys.env.example keys.env   # fill in your API keys
 source keys.env
 ```
-Models are env-overridable: `PAPER51_CLAUDE_MODEL`, `PAPER51_GPT_MODEL`, `PAPER51_GEMINI_MODEL`.
-No API keys are stored in this repository; the code reads them from environment variables only.
 
-## Pipeline
+Models are overridable via environment variables:
+`PAPER51_CLAUDE_MODEL`, `PAPER51_GPT_MODEL`, `PAPER51_GEMINI_MODEL`
+
+No API keys are stored in this repository.
+
+---
+
+## Reproducing the Results
+
 ```bash
-# 1. extract aligned native-resolution crops (parallel; caches the 4K source frame per content)
-python code/fast_extract.py --subjective AVT-VQDB-UHD-1-NVC/subjective.csv \
-    --pvs-dir AVT-VQDB-UHD-1-NVC/decoded --src-dir AVT-VQDB-UHD-1-NVC/original \
-    --out frames_full --n-frames 2 --crops 1 --workers 12
-#    (build_manifest.py rebuilds frames_full/manifest.json from the PNGs if extraction is interrupted)
+# 1. Extract aligned native-resolution 512×512 crops
+python code/fast_extract.py \
+    --subjective AVT-VQDB-UHD-1-NVC/subjective.csv \
+    --pvs-dir    AVT-VQDB-UHD-1-NVC/decoded \
+    --src-dir    AVT-VQDB-UHD-1-NVC/original \
+    --out        frames_full --n-frames 2 --crops 1 --workers 12
 
-# 2. run the three judges (two-pass: BT.500 score + artifact), resumable
-python code/02_run_judges.py --manifest frames_full/manifest.json --out scores.csv \
-    --judges claude gpt gemini --two-pass --workers 8
+# 2. Run the three VLM judges (resumable; ~216 × 3 API calls)
+python code/02_run_judges.py \
+    --manifest frames_full/manifest.json \
+    --out      scores.csv \
+    --judges   claude gpt gemini \
+    --two-pass --workers 8
 
-# 3. recompute PSNR/SSIM/LPIPS on the SAME crops (fair, frame-level baselines)
-python code/08_crop_metrics.py            # -> metrics_crop.csv  (VMAF carried over, video-level)
+# 3. Recompute PSNR / SSIM / LPIPS on the same crops
+python code/08_crop_metrics.py   # → metrics_crop.csv
 
-# 4. full statistics: SROCC/PLCC/KROCC, bootstrap + Fisher-z CIs, Shapiro-Wilk normality,
-#    Williams's test (dependent correlations), paired t / Wilcoxon, inter-judge agreement
-python code/04_stats.py --scores scores.csv --metrics metrics_crop.csv
+# 4. Statistics: SROCC/PLCC/KROCC, bootstrap + Fisher-z CIs,
+#    Shapiro-Wilk normality, Williams's test, paired t / Wilcoxon
+python code/04_stats.py \
+    --scores  scores.csv \
+    --metrics metrics_crop.csv
 
-# 5. figures (SROCC bars, scatter vs MOS, artifact distribution, pipeline, qualitative)
-python code/05_plots.py --prefix results_ --metrics metrics_crop.csv
-python code/07_pipeline.py ; python code/06_qualfig.py
+# 5. Generate all paper figures
+python code/05_plots.py
+python code/06_qualfig.py
+python code/07_pipeline.py
 ```
 
-## Headline result (all 216 PVS, on matched crops)
-Judges SROCC vs MOS: Gemini 0.736, Claude 0.723, GPT-5.5 0.705 — **significantly above**
-frame-level PSNR (0.627), LPIPS (0.623), SSIM (0.585) under Williams's test (p<0.01); below only
-**full-video** VMAF (0.907). Inter-model Spearman 0.88–0.95. `blocking` labeled exclusively for
-traditional codecs. Pre-computed result CSVs are in `results/`.
+Pre-computed results are in `results/` — no API keys needed to verify the numbers.
 
-## Notes
-- `pairwise_test.py` reproduces the pilot pairwise-ranking check (did not improve over anchored
-  absolute scoring on single crops).
-- Commercial model versions drift; the exact returned version string is logged with each verdict.
+---
+
+## Repository Structure
+
+```
+artifact_release/
+├── code/
+│   ├── fast_extract.py      # crop extraction (parallelized, 4K-safe)
+│   ├── 02_run_judges.py     # VLM querying (two-pass, resumable)
+│   ├── 08_crop_metrics.py   # PSNR/SSIM/LPIPS on same crops
+│   ├── 04_stats.py          # full statistical analysis
+│   ├── 05_plots.py          # SROCC bar chart, scatter vs MOS
+│   ├── 06_qualfig.py        # qualitative figure
+│   └── pairwise_test.py     # pilot pairwise ranking check
+├── results/
+│   ├── results_correlation.csv    # SROCC/PLCC/KROCC per predictor + subset
+│   ├── results_artifacts.csv      # artifact label distribution by codec family
+│   ├── results_inter_judge.csv    # cross-vendor Spearman correlations
+│   ├── results_normality.csv      # Shapiro-Wilk normality tests
+│   ├── results_judge_vs_vmaf.csv  # paired error tests (judge vs VMAF)
+│   └── gemini_reproducibility_R3.csv  # test-retest stability (R=3)
+├── keys.env.example         # API key template
+├── requirements.txt
+└── LICENSE                  # MIT
+```
+
+---
+
+## Limitations
+
+- **VMAF gap is real**: the judges do not match full-video VMAF (0.91), which sees the entire
+  sequence. On per-frame input the comparison is fair; temporal artifacts are not directly observed.
+- **Resolution bias**: judges over-rate upscaled low-resolution clips (+0.49 SD at ≤360p) and
+  under-rate native 4K (−0.22 SD). The most systematic failure mode identified.
+- **Low blocking recall**: blocking is high-precision (0 false positives on neural codecs) but
+  low-recall (detected in only 6 of the traditional PVS).
+- **Single dataset**: all results come from AVT-VQDB-UHD-1-NVC. Generalization to other content
+  and codec types remains open.
+- **Prompt sensitivity**: the two-pass anchored design was chosen based on pilot data; a differently
+  engineered prompt could shift the absolute numbers.
+
+---
 
 ## License
-Code released under the MIT License (see LICENSE). Dataset is the property of its original authors.
+
+Code released under the [MIT License](LICENSE).
+Dataset (AVT-VQDB-UHD-1-NVC) is the property of its original authors — see their distribution terms.

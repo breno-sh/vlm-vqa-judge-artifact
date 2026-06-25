@@ -1,8 +1,31 @@
+# API keys — never commit
 *.env
+keys.env
+*.secret
 !keys.env.example
-frames_*/
-*.mkv
-*.png
-AVT-VQDB-UHD-1-NVC/
+
+# Python
 __pycache__/
+*.py[cod]
 *.pyc
+.venv/
+venv/
+env/
+
+# Data — too large for git
+AVT-VQDB-UHD-1-NVC/
+frames_full/
+frames_*/
+scores_raw/
+*.mp4
+*.mkv
+*.yuv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
