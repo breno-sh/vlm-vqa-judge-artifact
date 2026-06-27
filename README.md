@@ -152,25 +152,24 @@ Pre-computed results are in `results/` — no API keys needed to verify the numb
 ## Repository Structure
 
 ```
-artifact_release/
 ├── code/
-│   ├── fast_extract.py      # crop extraction (parallelized, 4K-safe)
-│   ├── 02_run_judges.py     # VLM querying (two-pass, resumable)
-│   ├── 08_crop_metrics.py   # PSNR/SSIM/LPIPS on same crops
-│   ├── 04_stats.py          # full statistical analysis
-│   ├── 05_plots.py          # SROCC bar chart, scatter vs MOS
-│   ├── 06_qualfig.py        # qualitative figure
-│   └── pairwise_test.py     # pilot pairwise ranking check
+│   ├── fast_extract.py             # crop extraction (parallelized, 4K-safe)
+│   ├── 02_run_judges.py            # VLM querying (two-pass, resumable)
+│   ├── 08_crop_metrics.py          # PSNR/SSIM/LPIPS on same crops
+│   ├── 04_stats.py                 # full statistical analysis
+│   ├── 05_plots.py                 # SROCC bar chart, scatter vs MOS
+│   ├── 06_qualfig.py               # qualitative figure
+│   └── pairwise_test.py            # pilot pairwise ranking check
 ├── results/
-│   ├── results_correlation.csv    # SROCC/PLCC/KROCC per predictor + subset
-│   ├── results_artifacts.csv      # artifact label distribution by codec family
-│   ├── results_inter_judge.csv    # cross-vendor Spearman correlations
-│   ├── results_normality.csv      # Shapiro-Wilk normality tests
-│   ├── results_judge_vs_vmaf.csv  # paired error tests (judge vs VMAF)
+│   ├── results_correlation.csv     # SROCC/PLCC/KROCC per predictor + subset
+│   ├── results_artifacts.csv       # artifact label distribution by codec family
+│   ├── results_inter_judge.csv     # cross-vendor Spearman correlations
+│   ├── results_normality.csv       # Shapiro-Wilk normality tests
+│   ├── results_judge_vs_vmaf.csv   # paired error tests (judge vs VMAF)
 │   └── gemini_reproducibility_R3.csv  # test-retest stability (R=3)
-├── keys.env.example         # API key template
+├── keys.env.example                # API key template
 ├── requirements.txt
-└── LICENSE                  # MIT
+└── LICENSE                         # MIT
 ```
 
 ---
